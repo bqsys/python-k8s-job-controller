@@ -36,7 +36,7 @@ def stop_job(job_name, namespace):
     job = batch_v1.read_namespaced_job(name=job_name, namespace=namespace)
 
     # Update the job object to stop the job
-    job.spec.completions = 0
+    #job.spec.completions = 0 #this is immutable
     job.spec.parallelism = 0
 
     batch_v1.patch_namespaced_job(
