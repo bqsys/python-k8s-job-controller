@@ -68,10 +68,37 @@ def suspend_job(job_name, namespace):
 
     print("Job %s suspended" % job_name)
 
+def unsuspend_job(job_name, namespace):
+    # Load the Kubernetes configuration
+    config.load_kube_config()
+
+    # Create a Kubernetes API client
+    batch_v1 = client.BatchV1Api()
+
+    # Get the job object
+    job = batch_v1.read_namespaced_job(name=job_name, namespace=namespace)
+
+    # Update the job object to suspend the job
+    job.spec.suspend = False
+
+    batch_v1.patch_namespaced_job(
+        name=job_name,
+        namespace=namespace,
+        body=job
+    )
+
+    print("Job %s unsuspended" % job_name)
+
 # function to retrieve the status of the job
-def get_job_status():
+def get_job_status(job_name, namespace):
+    # Load the Kubernetes configuration
+    config.load_kube_config()
+
+    # Create a Kubernetes API client
+    batch_v1 = client.BatchV1Api()
+
     # get job details
-    job = batch_client.read_namespaced_job(name=job_name, namespace=namespace)
+    job = batch_v1.read_namespaced_job(name=job_name, namespace=namespace)
 
     # check job status
     status = job.status
@@ -87,6 +114,8 @@ def get_job_status():
                 print("Job failed.")
             elif condition.type == "Complete":
                 print("Job succeeded.")
+            elif condition.type == "Suspended":
+                print("Job suspended.")
     else:
         print("Job status is unknown.")
 
@@ -95,7 +124,7 @@ def main():
     parser = argparse.ArgumentParser(description='Start, stop, suspend or get status of a Kubernetes batch job.')
     parser.add_argument('--job-name', type=str, required=True, help='The name of the job')
     parser.add_argument('--namespace', type=str, required=True, help='The namespace of the job')
-    parser.add_argument('--action', type=str, required=True, choices=['start', 'stop', 'suspend', 'status'], help='The action to perform on the job (start, stop, or suspend)')
+    parser.add_argument('--action', type=str, required=True, choices=['start', 'stop', 'suspend', 'unsuspend','status'], help='The action to perform on the job (start, stop, or (un)suspend)')
 
     # Parse arguments
     args = parser.parse_args()
@@ -107,6 +136,8 @@ def main():
         stop_job(args.job_name, args.namespace)
     elif args.action == 'suspend':
         suspend_job(args.job_name, args.namespace)
+    elif args.action == 'unsuspend':
+        unsuspend_job(args.job_name, args.namespace)
     elif args.action == 'status':
         get_job_status(args.job_name, args.namespace)
 
